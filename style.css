@@ -1,0 +1,207 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Zen Kaku Gothic New", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #faf7f1;
+  color: #2f2f2f;
+}
+
+.page {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 48px 18px 64px;
+}
+
+.hero {
+  text-align: center;
+  padding: 28px 8px 34px;
+}
+
+.label {
+  margin: 0 0 10px;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: #6f6a62;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.message {
+  margin: 22px 0 0;
+  line-height: 1.9;
+  font-size: 16px;
+  color: #5b554d;
+}
+
+.calendar-card,
+.time-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(90, 80, 68, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 10px 32px rgba(70, 55, 35, 0.08);
+  padding: 22px 16px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.calendar-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.month-button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  background: #f0ebe3;
+  color: #3c3833;
+  font-size: 20px;
+}
+
+.month-button:disabled {
+  opacity: 0.28;
+}
+
+.weekdays,
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.weekdays {
+  margin-bottom: 10px;
+  color: #8a8175;
+  font-size: 13px;
+  text-align: center;
+}
+
+.day {
+  min-height: 58px;
+  border: none;
+  border-radius: 15px;
+  background: #f7f3ed;
+  color: #38332d;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  font: inherit;
+}
+
+.day.empty {
+  background: transparent;
+}
+
+.day.available-day {
+  background: #eef5ef;
+  color: #244c32;
+  box-shadow: inset 0 0 0 1px rgba(46, 104, 65, 0.12);
+}
+
+.day.unavailable-day {
+  background: #f0eeee;
+  color: #9a9390;
+}
+
+.day-number {
+  font-size: 15px;
+}
+
+.day-status {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.legend {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  color: #6f6a62;
+  font-size: 14px;
+}
+
+.legend p {
+  margin: 0;
+}
+
+.mark.available {
+  color: #2e6841;
+}
+
+.mark.unavailable {
+  color: #8b8782;
+}
+
+.time-panel {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.time-panel.hidden {
+  display: none;
+}
+
+.time-panel h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.time-note {
+  margin: 10px 0 18px;
+  color: #6f6a62;
+  font-size: 14px;
+}
+
+.time-buttons {
+  display: grid;
+  gap: 10px;
+}
+
+.time-button {
+  display: block;
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: 999px;
+  background: #2f5f3f;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 380px) {
+  .page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .day {
+    min-height: 52px;
+    border-radius: 13px;
+  }
+
+  .legend {
+    gap: 12px;
+    font-size: 13px;
+  }
+}
