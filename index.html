@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タオタントラセッション ご予約</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="label">タオタントラセッション</p>
+      <h1>ご予約</h1>
+      <p class="message">
+        今のあなたに合うタイミングを、<br>
+        お選びください。
+      </p>
+    </section>
+
+    <section class="calendar-card">
+      <div class="calendar-header">
+        <button id="prevMonth">←</button>
+        <h2 id="currentMonth">2026年7月</h2>
+        <button id="nextMonth">→</button>
+      </div>
+
+      <div class="weekdays">
+        <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
+      </div>
+
+      <div id="calendar" class="calendar"></div>
+
+      <div class="legend">
+        <p>○ ご予約可能</p>
+        <p>× ご予約済</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
