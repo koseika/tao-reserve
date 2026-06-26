@@ -2,7 +2,7 @@
 // Googleスプレッドシート連携前の仮データ版です。
 
 // TODO: ここを自分の公式LINEのURLに変更してください
-const LINE_URL = "https://lin.ee/X5BzSz6";
+const LINE_ID = "@656gnzam";
 
 // 表示できる月数：今月と来月まで
 const MAX_MONTH_OFFSET = 1;
@@ -113,7 +113,7 @@ function showTimes(month, day, times) {
     const message = `こんにちは。\n\n${dateText}${time}からのタオタントラセッションを希望します。\n\nお名前：\n\nよろしくお願いいたします。`;
     const link = document.createElement("a");
     link.className = "time-button";
-    link.href = `${LINE_URL}?text=${encodeURIComponent(message)}`;
+    link.href = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${encodeURIComponent(message)}`;
     link.textContent = time;
     timeButtons.appendChild(link);
   });
