@@ -1,7 +1,6 @@
-// Ver.0.6 予約ページMVP
-// Googleスプレッドシート連携前の仮データ版です。
+// Tao Reserve Ver.1.1
+// reservation-data.js の予約データを読み込んで表示します。
 
-// TODO: ここを自分の公式LINEのURLに変更してください
 const LINE_ID = "@656gnzam";
 
 // 表示できる月数：今月と来月まで
@@ -9,24 +8,6 @@ const MAX_MONTH_OFFSET = 1;
 
 // 通常の受付開始時間
 const DEFAULT_TIMES = ["15:00", "16:00", "17:00", "18:00", "19:00"];
-
-// 仮の予約データ
-// status: "available" 予約可能 / "unavailable" 予約不可
-// times: その日に表示する開始時間。省略するとDEFAULT_TIMESを表示。
-const reservationData = {
-  "2026-07-12": {
-    status: "available",
-    times: ["15:00", "16:00", "17:00", "18:00", "19:00"]
-  },
-  "2026-07-13": {
-    status: "available",
-    times: ["17:00", "18:00", "19:00"]
-  },
-  "2026-07-14": {
-    status: "unavailable",
-    times: []
-  }
-};
 
 const today = new Date();
 let currentMonthOffset = 0;
@@ -57,6 +38,19 @@ function getMonthLabel(date) {
   return `${date.getFullYear()}年${date.getMonth() + 1}月`;
 }
 
+function getDayData(key) {
+  // reservationData は reservation-data.js で定義する
+  if (typeof reservationData !== "undefined" && reservationData[key]) {
+    return reservationData[key];
+  }
+
+  // データがない日は、初期状態では予約可能にする
+  return {
+    status: "available",
+    times: DEFAULT_TIMES
+  };
+}
+
 function renderCalendar() {
   const date = getDisplayDate();
   const year = date.getFullYear();
@@ -83,7 +77,7 @@ function renderCalendar() {
 
   for (let day = 1; day <= lastDate; day++) {
     const key = formatDateKey(year, month, day);
-    const data = reservationData[key] || { status: "available", times: DEFAULT_TIMES };
+    const data = getDayData(key);
 
     const button = document.createElement("button");
     button.type = "button";
@@ -110,11 +104,13 @@ function showTimes(month, day, times) {
   timeButtons.innerHTML = "";
 
   times.forEach((time) => {
-    const message = `こんにちは。\n\n${dateText}${time}からのタオタントラセッションを希望します。\n\nお名前：\n\nよろしくお願いいたします。`;
+    const message = `こんにちは。\n\n${dateText} ${time} のタオタントラセッションを希望します。\n\nお名前：\n\nよろしくお願いいたします。`;
+
     const link = document.createElement("a");
     link.className = "time-button";
     link.href = `https://line.me/R/oaMessage/${encodeURIComponent(LINE_ID)}/?${encodeURIComponent(message)}`;
     link.textContent = time;
+
     timeButtons.appendChild(link);
   });
 
