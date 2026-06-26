@@ -2,7 +2,7 @@
 // Googleスプレッドシート連携前の仮データ版です。
 
 // TODO: ここを自分の公式LINEのURLに変更してください
-const LINE_URL = "https://line.me/R/ti/p/@your-line-id";
+const LINE_URL = "https://lin.ee/X5BzSz6";
 
 // 表示できる月数：今月と来月まで
 const MAX_MONTH_OFFSET = 1;
