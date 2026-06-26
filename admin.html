@@ -1,21 +1,376 @@
 <!DOCTYPE html>
-
 <html lang="ja">
-
 <head>
-
-  <meta charset="UTF-8">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tao Reserve 管理画面</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
+    body {
+      margin: 0;
+      font-family: "Zen Kaku Gothic New", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #faf7f1;
+      color: #2f2f2f;
+    }
+
+    .page {
+      width: min(100%, 640px);
+      margin: 0 auto;
+      padding: 36px 16px 60px;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 24px 8px 26px;
+    }
+
+    .label {
+      margin: 0 0 8px;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      color: #6f6a62;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+
+    .message {
+      margin: 18px 0 0;
+      line-height: 1.8;
+      color: #5b554d;
+      font-size: 15px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(90, 80, 68, 0.08);
+      border-radius: 24px;
+      box-shadow: 0 10px 32px rgba(70, 55, 35, 0.08);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .month-title {
+      font-size: 20px;
+      margin: 0 0 14px;
+      font-weight: 500;
+    }
+
+    .day-block {
+      border-top: 1px solid #eee6dc;
+      padding: 16px 0;
+    }
+
+    .day-block:first-of-type {
+      border-top: none;
+    }
+
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .day-title {
+      font-size: 17px;
+      font-weight: 500;
+    }
+
+    .closed-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #6f6a62;
+      white-space: nowrap;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .time-check {
+      position: relative;
+    }
+
+    .time-check input {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .time-check span {
+      display: block;
+      text-align: center;
+      padding: 11px 6px;
+      border-radius: 999px;
+      background: #f0ebe3;
+      color: #6f6a62;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .time-check input:checked + span {
+      background: #eef5ef;
+      color: #244c32;
+      border-color: rgba(46, 104, 65, 0.18);
+      font-weight: 500;
+    }
+
+    .day-block.closed .time-grid {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .actions {
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(to top, #faf7f1 70%, rgba(250,247,241,0));
+      padding: 22px 0 0;
+      margin-top: 12px;
+    }
+
+    .button {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 15px 18px;
+      font: inherit;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      background: #2f5f3f;
+      color: white;
+    }
+
+    .button.secondary {
+      margin-top: 10px;
+      background: #f0ebe3;
+      color: #3c3833;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 300px;
+      border-radius: 18px;
+      border: 1px solid #e5dbcf;
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: #fffdf9;
+      color: #2f2f2f;
+    }
+
+    .note {
+      margin: 10px 0 0;
+      color: #6f6a62;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 380px) {
+      .time-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
 </head>
-
 <body>
+  <main class="page">
+    <section class="hero">
+      <p class="label">Tao Reserve</p>
+      <h1>管理画面</h1>
+      <p class="message">予約できる日と時間を選んで、<br>予約データを作成します。</p>
+    </section>
 
-<h1>Tao Reserve 管理画面</h1>
+    <section class="card">
+      <h2 class="month-title">今月・来月の受付設定</h2>
+      <div id="adminList"></div>
+    </section>
 
-<p>開発中...</p>
+    <section class="card hidden" id="outputCard">
+      <h2 class="month-title">作成された reservation-data.js</h2>
+      <textarea id="outputCode" readonly></textarea>
+      <p class="note">
+        この内容を reservation-data.js に上書きすると、予約ページに反映されます。<br>
+        次のバージョンで、さらに簡単にアップロードできる形へ整えます。
+      </p>
+      <button class="button secondary" id="copyButton" type="button">コードをコピー</button>
+    </section>
 
+    <div class="actions">
+      <button class="button" id="generateButton" type="button">予約データを作成する</button>
+    </div>
+  </main>
+
+  <script src="reservation-data.js"></script>
+  <script>
+    const DEFAULT_TIMES = ["15:00", "16:00", "17:00", "18:00", "19:00"];
+    const adminList = document.getElementById("adminList");
+    const outputCard = document.getElementById("outputCard");
+    const outputCode = document.getElementById("outputCode");
+    const generateButton = document.getElementById("generateButton");
+    const copyButton = document.getElementById("copyButton");
+
+    function pad(number) {
+      return String(number).padStart(2, "0");
+    }
+
+    function formatKey(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function formatLabel(date) {
+      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+      return `${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）`;
+    }
+
+    function getDatesForTwoMonths() {
+      const today = new Date();
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+
+      const dates = [];
+      const cursor = new Date(start);
+
+      while (cursor <= end) {
+        dates.push(new Date(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      return dates;
+    }
+
+    function getExistingData(key) {
+      if (typeof reservationData !== "undefined" && reservationData[key]) {
+        return reservationData[key];
+      }
+
+      return {
+        status: "available",
+        times: DEFAULT_TIMES
+      };
+    }
+
+    function renderAdmin() {
+      const dates = getDatesForTwoMonths();
+      adminList.innerHTML = "";
+
+      dates.forEach((date) => {
+        const key = formatKey(date);
+        const existing = getExistingData(key);
+        const isClosed = existing.status === "unavailable";
+        const selectedTimes = existing.times || [];
+
+        const block = document.createElement("div");
+        block.className = `day-block ${isClosed ? "closed" : ""}`;
+        block.dataset.date = key;
+
+        const timeChecks = DEFAULT_TIMES.map((time) => {
+          const checked = selectedTimes.includes(time) ? "checked" : "";
+          return `
+            <label class="time-check">
+              <input type="checkbox" value="${time}" ${checked}>
+              <span>${time}</span>
+            </label>
+          `;
+        }).join("");
+
+        block.innerHTML = `
+          <div class="day-header">
+            <div>
+              <div class="day-title">${formatLabel(date)}</div>
+              <div class="note">${key}</div>
+            </div>
+            <label class="closed-toggle">
+              <input type="checkbox" class="closed-input" ${isClosed ? "checked" : ""}>
+              休み
+            </label>
+          </div>
+          <div class="time-grid">
+            ${timeChecks}
+          </div>
+        `;
+
+        const closedInput = block.querySelector(".closed-input");
+        closedInput.addEventListener("change", () => {
+          block.classList.toggle("closed", closedInput.checked);
+        });
+
+        adminList.appendChild(block);
+      });
+    }
+
+    function buildReservationDataCode() {
+      const blocks = [...document.querySelectorAll(".day-block")];
+      const dataLines = [];
+
+      blocks.forEach((block) => {
+        const key = block.dataset.date;
+        const isClosed = block.querySelector(".closed-input").checked;
+        const checkedTimes = [...block.querySelectorAll(".time-check input:checked")].map((input) => input.value);
+
+        const status = isClosed || checkedTimes.length === 0 ? "unavailable" : "available";
+        const times = status === "available" ? checkedTimes : [];
+
+        const timesText = `[${times.map((time) => `"${time}"`).join(", ")}]`;
+
+        dataLines.push(`  "${key}": {
+    status: "${status}",
+    times: ${timesText}
+  }`);
+      });
+
+      return `// Tao Reserve 予約データ
+// status: "available" = ○
+// status: "unavailable" = ×
+// times: 表示する開始時間
+//
+// このファイルは admin.html で作成した内容を貼り付けて更新します。
+
+const reservationData = {
+${dataLines.join(",\n\n")}
+};
+`;
+    }
+
+    generateButton.addEventListener("click", () => {
+      outputCode.value = buildReservationDataCode();
+      outputCard.classList.remove("hidden");
+      outputCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(outputCode.value);
+        copyButton.textContent = "コピーしました";
+        setTimeout(() => {
+          copyButton.textContent = "コードをコピー";
+        }, 1600);
+      } catch (error) {
+        outputCode.select();
+        document.execCommand("copy");
+      }
+    });
+
+    renderAdmin();
+  </script>
 </body>
-
 </html>
