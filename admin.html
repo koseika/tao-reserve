@@ -8,49 +8,40 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: "Zen Kaku Gothic New", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background: #faf7f1;
       color: #2f2f2f;
     }
-
     .page {
-      width: min(100%, 640px);
+      width: min(100%, 680px);
       margin: 0 auto;
-      padding: 36px 16px 60px;
+      padding: 36px 16px 72px;
     }
-
     .hero {
       text-align: center;
       padding: 24px 8px 26px;
     }
-
     .label {
       margin: 0 0 8px;
       font-size: 14px;
       letter-spacing: 0.12em;
       color: #6f6a62;
     }
-
     h1 {
       margin: 0;
       font-size: 30px;
       font-weight: 500;
       letter-spacing: 0.06em;
     }
-
     .message {
       margin: 18px 0 0;
       line-height: 1.8;
       color: #5b554d;
       font-size: 15px;
     }
-
     .card {
       background: rgba(255, 255, 255, 0.94);
       border: 1px solid rgba(90, 80, 68, 0.08);
@@ -59,22 +50,33 @@
       padding: 18px;
       margin-bottom: 16px;
     }
-
     .month-title {
       font-size: 20px;
       margin: 0 0 14px;
       font-weight: 500;
     }
-
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .small-button {
+      border: none;
+      border-radius: 999px;
+      padding: 11px 10px;
+      font: inherit;
+      font-size: 13px;
+      background: #f0ebe3;
+      color: #3c3833;
+    }
     .day-block {
       border-top: 1px solid #eee6dc;
       padding: 16px 0;
     }
-
     .day-block:first-of-type {
       border-top: none;
     }
-
     .day-header {
       display: flex;
       justify-content: space-between;
@@ -82,12 +84,15 @@
       gap: 12px;
       margin-bottom: 12px;
     }
-
     .day-title {
       font-size: 17px;
       font-weight: 500;
     }
-
+    .date-key {
+      margin-top: 3px;
+      color: #8a8175;
+      font-size: 12px;
+    }
     .closed-toggle {
       display: inline-flex;
       align-items: center;
@@ -96,22 +101,18 @@
       color: #6f6a62;
       white-space: nowrap;
     }
-
     .time-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 8px;
     }
-
     .time-check {
       position: relative;
     }
-
     .time-check input {
       position: absolute;
       opacity: 0;
     }
-
     .time-check span {
       display: block;
       text-align: center;
@@ -122,19 +123,29 @@
       font-size: 14px;
       border: 1px solid transparent;
     }
-
     .time-check input:checked + span {
       background: #eef5ef;
       color: #244c32;
       border-color: rgba(46, 104, 65, 0.18);
       font-weight: 500;
     }
-
     .day-block.closed .time-grid {
       opacity: 0.35;
       pointer-events: none;
     }
-
+    .status-pill {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #eef5ef;
+      color: #244c32;
+    }
+    .day-block.closed .status-pill {
+      background: #f0eeee;
+      color: #8b8782;
+    }
     .actions {
       position: sticky;
       bottom: 0;
@@ -142,7 +153,6 @@
       padding: 22px 0 0;
       margin-top: 12px;
     }
-
     .button {
       width: 100%;
       border: none;
@@ -154,16 +164,14 @@
       background: #2f5f3f;
       color: white;
     }
-
     .button.secondary {
       margin-top: 10px;
       background: #f0ebe3;
       color: #3c3833;
     }
-
     textarea {
       width: 100%;
-      min-height: 300px;
+      min-height: 240px;
       border-radius: 18px;
       border: 1px solid #e5dbcf;
       padding: 14px;
@@ -173,22 +181,16 @@
       background: #fffdf9;
       color: #2f2f2f;
     }
-
     .note {
       margin: 10px 0 0;
       color: #6f6a62;
       font-size: 13px;
       line-height: 1.7;
     }
-
-    .hidden {
-      display: none;
-    }
-
-    @media (max-width: 380px) {
-      .time-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
+    .hidden { display: none; }
+    @media (max-width: 420px) {
+      .quick-actions { grid-template-columns: 1fr; }
+      .time-grid { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
@@ -197,11 +199,19 @@
     <section class="hero">
       <p class="label">Tao Reserve</p>
       <h1>管理画面</h1>
-      <p class="message">予約できる日と時間を選んで、<br>予約データを作成します。</p>
+      <p class="message">予約できる日と時間を選んで、<br>reservation-data.js を作成します。</p>
     </section>
 
     <section class="card">
       <h2 class="month-title">今月・来月の受付設定</h2>
+
+      <div class="quick-actions">
+        <button class="small-button" type="button" id="allAvailable">全日 15〜19時受付</button>
+        <button class="small-button" type="button" id="allClosed">全日 休みにする</button>
+        <button class="small-button" type="button" id="allFrom17">全日 17時以降だけ</button>
+        <button class="small-button" type="button" id="resetExisting">現在のデータに戻す</button>
+      </div>
+
       <div id="adminList"></div>
     </section>
 
@@ -209,9 +219,10 @@
       <h2 class="month-title">作成された reservation-data.js</h2>
       <textarea id="outputCode" readonly></textarea>
       <p class="note">
-        この内容を reservation-data.js に上書きすると、予約ページに反映されます。<br>
-        次のバージョンで、さらに簡単にアップロードできる形へ整えます。
+        「reservation-data.js をダウンロード」を押すと、ファイルが保存されます。<br>
+        そのファイルをGitHubにアップロードすれば、予約ページに反映されます。
       </p>
+      <button class="button" id="downloadButton" type="button">reservation-data.js をダウンロード</button>
       <button class="button secondary" id="copyButton" type="button">コードをコピー</button>
     </section>
 
@@ -223,10 +234,13 @@
   <script src="reservation-data.js"></script>
   <script>
     const DEFAULT_TIMES = ["15:00", "16:00", "17:00", "18:00", "19:00"];
+    const FROM_17_TIMES = ["17:00", "18:00", "19:00"];
+
     const adminList = document.getElementById("adminList");
     const outputCard = document.getElementById("outputCard");
     const outputCode = document.getElementById("outputCode");
     const generateButton = document.getElementById("generateButton");
+    const downloadButton = document.getElementById("downloadButton");
     const copyButton = document.getElementById("copyButton");
 
     function pad(number) {
@@ -246,7 +260,6 @@
       const today = new Date();
       const start = new Date(today.getFullYear(), today.getMonth(), 1);
       const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-
       const dates = [];
       const cursor = new Date(start);
 
@@ -263,19 +276,21 @@
         return reservationData[key];
       }
 
-      return {
-        status: "available",
-        times: DEFAULT_TIMES
-      };
+      return { status: "available", times: DEFAULT_TIMES };
     }
 
-    function renderAdmin() {
+    function renderAdmin(mode = "existing") {
       const dates = getDatesForTwoMonths();
       adminList.innerHTML = "";
 
       dates.forEach((date) => {
         const key = formatKey(date);
-        const existing = getExistingData(key);
+        let existing = getExistingData(key);
+
+        if (mode === "allAvailable") existing = { status: "available", times: DEFAULT_TIMES };
+        if (mode === "allClosed") existing = { status: "unavailable", times: [] };
+        if (mode === "allFrom17") existing = { status: "available", times: FROM_17_TIMES };
+
         const isClosed = existing.status === "unavailable";
         const selectedTimes = existing.times || [];
 
@@ -297,21 +312,23 @@
           <div class="day-header">
             <div>
               <div class="day-title">${formatLabel(date)}</div>
-              <div class="note">${key}</div>
+              <div class="date-key">${key}</div>
+              <span class="status-pill">${isClosed ? "予約不可" : "予約可能"}</span>
             </div>
             <label class="closed-toggle">
               <input type="checkbox" class="closed-input" ${isClosed ? "checked" : ""}>
               休み
             </label>
           </div>
-          <div class="time-grid">
-            ${timeChecks}
-          </div>
+          <div class="time-grid">${timeChecks}</div>
         `;
 
         const closedInput = block.querySelector(".closed-input");
+        const statusPill = block.querySelector(".status-pill");
+
         closedInput.addEventListener("change", () => {
           block.classList.toggle("closed", closedInput.checked);
+          statusPill.textContent = closedInput.checked ? "予約不可" : "予約可能";
         });
 
         adminList.appendChild(block);
@@ -326,10 +343,8 @@
         const key = block.dataset.date;
         const isClosed = block.querySelector(".closed-input").checked;
         const checkedTimes = [...block.querySelectorAll(".time-check input:checked")].map((input) => input.value);
-
         const status = isClosed || checkedTimes.length === 0 ? "unavailable" : "available";
         const times = status === "available" ? checkedTimes : [];
-
         const timesText = `[${times.map((time) => `"${time}"`).join(", ")}]`;
 
         dataLines.push(`  "${key}": {
@@ -343,32 +358,52 @@
 // status: "unavailable" = ×
 // times: 表示する開始時間
 //
-// このファイルは admin.html で作成した内容を貼り付けて更新します。
+// このファイルは admin.html で作成した内容を使って更新します。
 
 const reservationData = {
-${dataLines.join(",\n\n")}
+${dataLines.join(",\\n\\n")}
 };
 `;
     }
 
-    generateButton.addEventListener("click", () => {
+    function generateCode() {
       outputCode.value = buildReservationDataCode();
       outputCard.classList.remove("hidden");
       outputCard.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    }
+
+    function downloadReservationData() {
+      if (!outputCode.value) generateCode();
+
+      const blob = new Blob([outputCode.value], { type: "text/javascript;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reservation-data.js";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    generateButton.addEventListener("click", generateCode);
+    downloadButton.addEventListener("click", downloadReservationData);
 
     copyButton.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(outputCode.value);
         copyButton.textContent = "コピーしました";
-        setTimeout(() => {
-          copyButton.textContent = "コードをコピー";
-        }, 1600);
+        setTimeout(() => copyButton.textContent = "コードをコピー", 1600);
       } catch (error) {
         outputCode.select();
         document.execCommand("copy");
       }
     });
+
+    document.getElementById("allAvailable").addEventListener("click", () => renderAdmin("allAvailable"));
+    document.getElementById("allClosed").addEventListener("click", () => renderAdmin("allClosed"));
+    document.getElementById("allFrom17").addEventListener("click", () => renderAdmin("allFrom17"));
+    document.getElementById("resetExisting").addEventListener("click", () => renderAdmin("existing"));
 
     renderAdmin();
   </script>
