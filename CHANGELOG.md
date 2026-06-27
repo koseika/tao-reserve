@@ -1,6 +1,7 @@
 # Tao Reserve CHANGELOG
 
-## Firebase Edition Ver.3.2
+## Firebase Edition Ver.3.3 Debug
 
-- iPhone Safari対策としてGoogleログイン開始処理に短い遅延を追加
-- signInWithRedirect方式は継続
+- Googleログイン失敗原因を画面に表示
+- Firebase初期化、Auth取得、Redirect開始、Redirect結果をログ表示
+- エラーコードとメッセージを表示
