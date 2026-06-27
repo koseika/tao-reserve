@@ -4,280 +4,119 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tao Reserve 管理画面</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <style>
-    .admin-page { width: min(100%, 680px); }
-    .admin-card {
-      background: rgba(255,255,255,.94);
-      border: 1px solid rgba(90,80,68,.08);
-      border-radius: 24px;
-      box-shadow: 0 10px 32px rgba(70,55,35,.08);
-      padding: 18px;
-      margin-bottom: 16px;
-    }
-    .month-title { font-size: 20px; margin: 0 0 14px; font-weight: 500; }
-    .day-block { border-top: 1px solid #eee6dc; padding: 16px 0; }
-    .day-block:first-of-type { border-top: none; }
-    .day-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .day-title { font-size: 17px; font-weight: 500; }
-    .date-key { margin-top: 3px; color: #8a8175; font-size: 12px; }
-    .closed-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #6f6a62; white-space: nowrap; }
-    .time-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .time-check { position: relative; }
-    .time-check input { position: absolute; opacity: 0; }
-    .time-check span {
-      display: block;
-      text-align: center;
-      padding: 11px 6px;
-      border-radius: 999px;
-      background: #f0ebe3;
-      color: #6f6a62;
-      font-size: 14px;
-      border: 1px solid transparent;
-    }
-    .time-check input:checked + span {
-      background: #eef5ef;
-      color: #244c32;
-      border-color: rgba(46,104,65,.18);
-      font-weight: 500;
-    }
-    .day-block.closed .time-grid { opacity: .35; pointer-events: none; }
-    .actions {
-      position: sticky;
-      bottom: 0;
-      background: linear-gradient(to top, #faf7f1 70%, rgba(250,247,241,0));
-      padding: 22px 0 0;
-      margin-top: 12px;
-    }
-    @media (max-width: 420px) { .time-grid { grid-template-columns: repeat(3, 1fr); } }
+    .admin-page{width:min(100%,680px)}
+    .admin-card,.login-card{background:rgba(255,255,255,.94);border:1px solid rgba(90,80,68,.08);border-radius:24px;box-shadow:0 10px 32px rgba(70,55,35,.08);padding:18px;margin-bottom:16px}
+    .month-title{font-size:20px;margin:0 0 14px;font-weight:500}
+    .day-block{border-top:1px solid #eee6dc;padding:16px 0}.day-block:first-of-type{border-top:none}
+    .day-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+    .day-title{font-size:17px;font-weight:500}.date-key{margin-top:3px;color:#8a8175;font-size:12px}
+    .closed-toggle{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#6f6a62;white-space:nowrap}
+    .time-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.time-check{position:relative}.time-check input{position:absolute;opacity:0}
+    .time-check span{display:block;text-align:center;padding:11px 6px;border-radius:999px;background:#f0ebe3;color:#6f6a62;font-size:14px;border:1px solid transparent}
+    .time-check input:checked+span{background:#eef5ef;color:#244c32;border-color:rgba(46,104,65,.18);font-weight:500}
+    .day-block.closed .time-grid{opacity:.35;pointer-events:none}
+    .actions{position:sticky;bottom:0;background:linear-gradient(to top,#faf7f1 70%,rgba(250,247,241,0));padding:22px 0 0;margin-top:12px}
+    @media(max-width:420px){.time-grid{grid-template-columns:repeat(3,1fr)}}
   </style>
 </head>
 <body>
-  <main class="page admin-page">
-    <section class="hero">
-      <p class="label">Tao Reserve</p>
-      <h1>管理画面</h1>
-      <p class="message">Googleログイン後、<br>予約できる日と時間を保存します。</p>
+<main class="page admin-page">
+  <section class="hero">
+    <p class="label">Tao Reserve</p>
+    <h1>管理画面</h1>
+    <p class="message">Googleログイン後、<br>予約できる日と時間を保存します。</p>
+  </section>
+
+  <section id="loginCard" class="login-card">
+    <h2 class="month-title">管理者ログイン</h2>
+    <p class="message">管理画面を使うには、Googleアカウントでログインしてください。</p>
+    <button id="loginButton" class="primary-button" type="button">Googleでログイン</button>
+    <p id="loginStatus" class="status-message"></p>
+  </section>
+
+  <section id="adminContent" class="hidden">
+    <section class="admin-card">
+      <h2 class="month-title">今月・来月の受付設定</h2>
+      <p class="status-message">休みにしたい日は「休み」にチェック。17時以降だけ受けたい日は15時・16時を外してください。</p>
+      <div id="adminList"></div>
     </section>
+    <div class="actions">
+      <button class="primary-button" id="saveButton" type="button">Firebaseに保存する</button>
+      <button class="secondary-button" id="logoutButton" type="button">ログアウト</button>
+      <p id="statusMessage" class="status-message"></p>
+    </div>
+  </section>
+</main>
 
-    <section id="loginCard" class="login-card">
-      <h2 class="month-title">管理者ログイン</h2>
-      <p class="message">管理画面を使うには、Googleアカウントでログインしてください。</p>
-      <button id="loginButton" class="primary-button" type="button">Googleでログイン</button>
-      <p id="loginStatus" class="status-message"></p>
-    </section>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { firebaseConfig, ADMIN_EMAIL } from "./firebase-config.js";
 
-    <section id="adminContent" class="hidden">
-      <section class="admin-card">
-        <h2 class="month-title">今月・来月の受付設定</h2>
-        <p class="status-message">休みにしたい日は「休み」にチェック。17時以降だけ受けたい日は15時・16時を外してください。</p>
-        <div id="adminList"></div>
-      </section>
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app), provider=new GoogleAuthProvider();
+const DEFAULT_TIMES=["15:00","16:00","17:00","18:00","19:00"];
+const loginCard=document.getElementById("loginCard"), adminContent=document.getElementById("adminContent"), loginButton=document.getElementById("loginButton"), logoutButton=document.getElementById("logoutButton"), loginStatus=document.getElementById("loginStatus"), adminList=document.getElementById("adminList"), saveButton=document.getElementById("saveButton"), statusMessage=document.getElementById("statusMessage");
 
-      <div class="actions">
-        <button class="primary-button" id="saveButton" type="button">Firebaseに保存する</button>
-        <button class="secondary-button" id="logoutButton" type="button">ログアウト</button>
-        <p id="statusMessage" class="status-message"></p>
+function pad(n){return String(n).padStart(2,"0")}
+function formatKey(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function formatLabel(d){return `${d.getMonth()+1}月${d.getDate()}日（${["日","月","火","水","木","金","土"][d.getDay()]}）`}
+function getDatesForTwoMonths(){const t=new Date(),s=new Date(t.getFullYear(),t.getMonth(),1),e=new Date(t.getFullYear(),t.getMonth()+2,0),a=[],c=new Date(s);while(c<=e){a.push(new Date(c));c.setDate(c.getDate()+1)}return a}
+async function getDayData(key){try{const snap=await getDoc(doc(db,"availability",key));if(snap.exists())return snap.data()}catch(e){console.error(e)}return{status:"available",times:DEFAULT_TIMES}}
+
+async function renderAdmin(){
+  statusMessage.textContent="読み込み中...";
+  adminList.innerHTML="";
+  for(const date of getDatesForTwoMonths()){
+    const key=formatKey(date), data=await getDayData(key), isClosed=data.status==="unavailable", selected=data.times||[];
+    const block=document.createElement("div");
+    block.className=`day-block ${isClosed?"closed":""}`; block.dataset.date=key;
+    block.innerHTML=`
+      <div class="day-header">
+        <div><div class="day-title">${formatLabel(date)}</div><div class="date-key">${key}</div></div>
+        <label class="closed-toggle"><input type="checkbox" class="closed-input" ${isClosed?"checked":""}>休み</label>
       </div>
-    </section>
-  </main>
+      <div class="time-grid">
+        ${DEFAULT_TIMES.map(t=>`<label class="time-check"><input type="checkbox" value="${t}" ${selected.includes(t)?"checked":""}><span>${t}</span></label>`).join("")}
+      </div>`;
+    const closedInput=block.querySelector(".closed-input");
+    closedInput.addEventListener("change",()=>block.classList.toggle("closed",closedInput.checked));
+    adminList.appendChild(block);
+  }
+  statusMessage.textContent="";
+}
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-    import {
-      getAuth,
-      GoogleAuthProvider,
-      signInWithRedirect,
-      getRedirectResult,
-      signOut,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc,
-      writeBatch
-    } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-    import { firebaseConfig, ADMIN_EMAIL } from "./firebase-config.js";
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
-
-    const DEFAULT_TIMES = ["15:00", "16:00", "17:00", "18:00", "19:00"];
-
-    const loginCard = document.getElementById("loginCard");
-    const adminContent = document.getElementById("adminContent");
-    const loginButton = document.getElementById("loginButton");
-    const logoutButton = document.getElementById("logoutButton");
-    const loginStatus = document.getElementById("loginStatus");
-    const adminList = document.getElementById("adminList");
-    const saveButton = document.getElementById("saveButton");
-    const statusMessage = document.getElementById("statusMessage");
-
-    function pad(number) {
-      return String(number).padStart(2, "0");
-    }
-
-    function formatKey(date) {
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    }
-
-    function formatLabel(date) {
-      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-      return `${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）`;
-    }
-
-    function getDatesForTwoMonths() {
-      const today = new Date();
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-      const dates = [];
-      const cursor = new Date(start);
-      while (cursor <= end) {
-        dates.push(new Date(cursor));
-        cursor.setDate(cursor.getDate() + 1);
-      }
-      return dates;
-    }
-
-    async function getDayData(key) {
-      try {
-        const ref = doc(db, "availability", key);
-        const snapshot = await getDoc(ref);
-        if (snapshot.exists()) return snapshot.data();
-      } catch (error) {
-        console.error("読み込みエラー:", error);
-      }
-      return { status: "available", times: DEFAULT_TIMES };
-    }
-
-    async function renderAdmin() {
-      statusMessage.textContent = "読み込み中...";
-      const dates = getDatesForTwoMonths();
-      adminList.innerHTML = "";
-
-      for (const date of dates) {
-        const key = formatKey(date);
-        const data = await getDayData(key);
-        const isClosed = data.status === "unavailable";
-        const selectedTimes = data.times || [];
-
-        const block = document.createElement("div");
-        block.className = `day-block ${isClosed ? "closed" : ""}`;
-        block.dataset.date = key;
-
-        const timeChecks = DEFAULT_TIMES.map((time) => {
-          const checked = selectedTimes.includes(time) ? "checked" : "";
-          return `
-            <label class="time-check">
-              <input type="checkbox" value="${time}" ${checked}>
-              <span>${time}</span>
-            </label>
-          `;
-        }).join("");
-
-        block.innerHTML = `
-          <div class="day-header">
-            <div>
-              <div class="day-title">${formatLabel(date)}</div>
-              <div class="date-key">${key}</div>
-            </div>
-            <label class="closed-toggle">
-              <input type="checkbox" class="closed-input" ${isClosed ? "checked" : ""}>
-              休み
-            </label>
-          </div>
-          <div class="time-grid">${timeChecks}</div>
-        `;
-
-        const closedInput = block.querySelector(".closed-input");
-        closedInput.addEventListener("change", () => {
-          block.classList.toggle("closed", closedInput.checked);
-        });
-
-        adminList.appendChild(block);
-      }
-      statusMessage.textContent = "";
-    }
-
-    async function saveAvailability() {
-      saveButton.disabled = true;
-      statusMessage.textContent = "保存中...";
-      try {
-        const user = auth.currentUser;
-        if (!user || user.email !== ADMIN_EMAIL) {
-          throw new Error("管理者としてログインしていません。");
-        }
-
-        const blocks = [...document.querySelectorAll(".day-block")];
-        const batch = writeBatch(db);
-
-        blocks.forEach((block) => {
-          const key = block.dataset.date;
-          const isClosed = block.querySelector(".closed-input").checked;
-          const checkedTimes = [...block.querySelectorAll(".time-check input:checked")].map((input) => input.value);
-          const status = isClosed || checkedTimes.length === 0 ? "unavailable" : "available";
-          const times = status === "available" ? checkedTimes : [];
-
-          const ref = doc(db, "availability", key);
-          batch.set(ref, {
-            status,
-            times,
-            updatedAt: new Date().toISOString(),
-            updatedBy: user.email
-          });
-        });
-
-        await batch.commit();
-        statusMessage.textContent = "保存しました。予約ページを確認してください。";
-      } catch (error) {
-        console.error("保存エラー:", error);
-        statusMessage.textContent = "保存できませんでした。ログインまたはFirestoreルールを確認してください。";
-      } finally {
-        saveButton.disabled = false;
-      }
-    }
-
-    loginButton.addEventListener("click", async () => {
-      loginStatus.textContent = "Googleログインへ移動します...";
-      await signInWithRedirect(auth, provider);
+async function saveAvailability(){
+  saveButton.disabled=true; statusMessage.textContent="保存中...";
+  try{
+    const user=auth.currentUser;
+    if(!user||user.email!==ADMIN_EMAIL)throw new Error("not admin");
+    const batch=writeBatch(db);
+    [...document.querySelectorAll(".day-block")].forEach(block=>{
+      const key=block.dataset.date, isClosed=block.querySelector(".closed-input").checked;
+      const checked=[...block.querySelectorAll(".time-check input:checked")].map(i=>i.value);
+      const status=isClosed||checked.length===0?"unavailable":"available";
+      batch.set(doc(db,"availability",key),{status,times:status==="available"?checked:[],updatedAt:new Date().toISOString(),updatedBy:user.email});
     });
+    await batch.commit(); statusMessage.textContent="保存しました。予約ページを確認してください。";
+  }catch(e){console.error(e);statusMessage.textContent="保存できませんでした。ログインまたはFirestoreルールを確認してください。";}
+  finally{saveButton.disabled=false}
+}
 
-    logoutButton.addEventListener("click", async () => {
-      await signOut(auth);
-    });
-
-    saveButton.addEventListener("click", saveAvailability);
-
-    getRedirectResult(auth).catch((error) => {
-      console.error("リダイレクトログインエラー:", error);
-      loginStatus.textContent = "ログイン処理でエラーが出ました。";
-    });
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        loginCard.classList.remove("hidden");
-        adminContent.classList.add("hidden");
-        loginStatus.textContent = "";
-        return;
-      }
-
-      if (user.email !== ADMIN_EMAIL) {
-        loginCard.classList.remove("hidden");
-        adminContent.classList.add("hidden");
-        loginStatus.textContent = `${user.email} は管理者として許可されていません。`;
-        return;
-      }
-
-      loginCard.classList.add("hidden");
-      adminContent.classList.remove("hidden");
-      await renderAdmin();
-    });
-  </script>
+loginButton.addEventListener("click", async()=>{
+  loginStatus.textContent="Googleログインへ移動します...";
+  setTimeout(()=>signInWithRedirect(auth,provider).catch(e=>{console.error(e);loginStatus.textContent="ログイン開始でエラーが出ました。"}),80);
+});
+logoutButton.addEventListener("click",()=>signOut(auth));
+saveButton.addEventListener("click",saveAvailability);
+getRedirectResult(auth).catch(e=>{console.error(e);loginStatus.textContent="ログイン処理でエラーが出ました。"});
+onAuthStateChanged(auth,async user=>{
+  if(!user){loginCard.classList.remove("hidden");adminContent.classList.add("hidden");return}
+  if(user.email!==ADMIN_EMAIL){loginCard.classList.remove("hidden");adminContent.classList.add("hidden");loginStatus.textContent=`${user.email} は管理者として許可されていません。`;return}
+  loginCard.classList.add("hidden");adminContent.classList.remove("hidden");await renderAdmin();
+});
+</script>
 </body>
 </html>
