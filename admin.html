@@ -3,7 +3,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"/></head><body>
 <main class="page admin-page">
 <section class="hero"><p class="label">Tao Reserve</p><h1>管理画面</h1><p class="message">予約設定と空き状況を保存します。</p></section>
-<section id="loadingCard" class="admin-card loading-card"><p class="message">読み込み中...</p></section>
+<section id="loadingCard" class="admin-card loading-card"><p id="loadingText" class="message">読み込み中...</p></section>
 <section id="loginCard" class="login-card hidden"><h2 class="month-title">管理者ログイン</h2><p class="message">管理画面を使うには、Googleアカウントでログインしてください。</p><button id="popupLoginButton" class="primary-button" type="button">Googleでログイン</button><button id="redirectLoginButton" class="secondary-button" type="button">ログインできない時はこちら</button><p id="loginStatus" class="status-message"></p></section>
 <section id="adminContent" class="hidden">
 <section class="admin-card"><h2 class="month-title">予約設定</h2><div class="setting-grid">
@@ -19,27 +19,52 @@
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence}from"https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-import{getFirestore,doc,getDoc,writeBatch,setDoc}from"https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import{getFirestore,doc,getDoc,writeBatch,setDoc,collection,query,where,documentId,getDocs}from"https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import{firebaseConfig,ADMIN_EMAIL}from"./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});await setPersistence(auth,browserLocalPersistence);
 const DEFAULT_SETTINGS={reservationNoticeDays:2,displayMonths:2,startTime:"15:00",endTime:"19:00",intervalMinutes:60};let settings={...DEFAULT_SETTINGS},settingsDirty=false,calendarDirty=false;
-const loadingCard=document.getElementById("loadingCard"),loginCard=document.getElementById("loginCard"),adminContent=document.getElementById("adminContent"),loginStatus=document.getElementById("loginStatus"),adminList=document.getElementById("adminList"),statusMessage=document.getElementById("statusMessage");
+const CLEANUP_CONFIRM_THRESHOLD=100;
+const loadingCard=document.getElementById("loadingCard"),loadingText=document.getElementById("loadingText"),loginCard=document.getElementById("loginCard"),adminContent=document.getElementById("adminContent"),loginStatus=document.getElementById("loginStatus"),adminList=document.getElementById("adminList"),statusMessage=document.getElementById("statusMessage");
 const reservationNoticeDaysInput=document.getElementById("reservationNoticeDays"),displayMonthsInput=document.getElementById("displayMonths"),startTimeInput=document.getElementById("startTime"),endTimeInput=document.getElementById("endTime"),intervalMinutesInput=document.getElementById("intervalMinutes");
 const saveSettingsButton=document.getElementById("saveSettingsButton"),saveCalendarButton=document.getElementById("saveCalendarButton"),settingsSaveState=document.getElementById("settingsSaveState"),calendarSaveState=document.getElementById("calendarSaveState");
 function setDirty(type,isDirty){if(type==="settings"){settingsDirty=isDirty;settingsSaveState.textContent=isDirty?"🔴 未保存です":"🟢 保存済み";settingsSaveState.className=`save-state ${isDirty?"dirty":"saved"}`;saveSettingsButton.classList.toggle("is-muted",!isDirty)}if(type==="calendar"){calendarDirty=isDirty;calendarSaveState.textContent=isDirty?"🔴 未保存です":"🟢 保存済み";calendarSaveState.className=`save-state ${isDirty?"dirty":"saved"}`;saveCalendarButton.classList.toggle("is-muted",!isDirty)}}
 window.addEventListener("beforeunload",e=>{if(settingsDirty||calendarDirty){e.preventDefault();e.returnValue=""}});
 function pad(n){return String(n).padStart(2,"0")}function stripTime(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}function addDays(d,days){const n=new Date(d);n.setDate(n.getDate()+days);return n}
 function formatKey(d){return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}function formatLabel(d){return`${d.getMonth()+1}月${d.getDate()}日（${["日","月","火","水","木","金","土"][d.getDay()]}）`}
+function getBookableStartDate(){return addDays(stripTime(new Date()),Number(settings.reservationNoticeDays||0))}
 function getBookableDates(monthCount,noticeDays){const today=stripTime(new Date()),start=addDays(today,Number(noticeDays||0)),end=new Date(today.getFullYear(),today.getMonth()+Number(monthCount||2),0),dates=[],c=new Date(start);while(c<=end){dates.push(new Date(c));c.setDate(c.getDate()+1)}return dates}
 function timeToMinutes(time){const[h,m]=time.split(":").map(Number);return h*60+m}function minutesToTime(minutes){return`${pad(Math.floor(minutes/60))}:${pad(minutes%60)}`}
 function generateDefaultTimes(){const start=timeToMinutes(settings.startTime),end=timeToMinutes(settings.endTime),interval=Number(settings.intervalMinutes),times=[];for(let c=start;c<=end;c+=interval)times.push(minutesToTime(c));return times}
 function readSettingsFromForm(){return{reservationNoticeDays:Number(reservationNoticeDaysInput.value||2),displayMonths:Number(displayMonthsInput.value||2),startTime:startTimeInput.value||"15:00",endTime:endTimeInput.value||"19:00",intervalMinutes:Number(intervalMinutesInput.value||60)}}
 async function loadSettings(){try{const snap=await getDoc(doc(db,"settings","booking"));if(snap.exists())settings={...DEFAULT_SETTINGS,...snap.data()}}catch(e){console.error(e)}reservationNoticeDaysInput.value=settings.reservationNoticeDays;displayMonthsInput.value=settings.displayMonths;startTimeInput.value=settings.startTime;endTimeInput.value=settings.endTime;intervalMinutesInput.value=settings.intervalMinutes}
+async function cleanupOldAvailabilityData(){
+  const cutoffKey=formatKey(getBookableStartDate());
+  loadingText.textContent="古いデータを確認中...";
+  try{
+    const q=query(collection(db,"availability"),where(documentId(),"<",cutoffKey));
+    const snapshot=await getDocs(q);
+    const count=snapshot.size;
+    if(count===0)return "整理対象はありません。";
+    let shouldDelete=true;
+    if(count>=CLEANUP_CONFIRM_THRESHOLD){
+      shouldDelete=window.confirm(`古い予約データが${count}件あります。\\n管理画面に表示されない古いデータを整理しますか？`);
+    }
+    if(!shouldDelete)return `古いデータ${count}件の整理を今回は見送りました。`;
+    loadingText.textContent=`古いデータを整理中...（${count}件）`;
+    const batch=writeBatch(db);
+    snapshot.forEach(docSnap=>batch.delete(docSnap.ref));
+    await batch.commit();
+    return `古いデータを${count}件整理しました。`;
+  }catch(e){
+    console.error(e);
+    return "古いデータの整理でエラーが出ました。";
+  }
+}
 async function getDayData(key){try{const snap=await getDoc(doc(db,"availability",key));if(snap.exists())return snap.data()}catch(e){console.error(e)}return{status:"available",times:generateDefaultTimes()}}
 async function renderAdmin(){statusMessage.textContent="読み込み中...";settings=readSettingsFromForm();adminList.innerHTML="";const defaultTimes=generateDefaultTimes();for(const date of getBookableDates(settings.displayMonths,settings.reservationNoticeDays)){const key=formatKey(date),data=await getDayData(key),isClosed=data.status==="unavailable",selected=data.times||defaultTimes;const block=document.createElement("div");block.className=`day-block ${isClosed?"closed":""}`;block.dataset.date=key;block.innerHTML=`<div class="day-header"><div><div class="day-title">${formatLabel(date)}</div><div class="date-key">${key}</div></div><label class="closed-toggle"><input type="checkbox" class="closed-input" ${isClosed?"checked":""}>休み</label></div><div class="time-grid">${defaultTimes.map(t=>`<label class="time-check"><input type="checkbox" value="${t}" ${selected.includes(t)?"checked":""}><span>${t}</span></label>`).join("")}</div>`;block.querySelectorAll("input").forEach(input=>input.addEventListener("change",()=>setDirty("calendar",true)));const closedInput=block.querySelector(".closed-input");closedInput.addEventListener("change",()=>block.classList.toggle("closed",closedInput.checked));adminList.appendChild(block)}statusMessage.textContent="";setDirty("calendar",false)}
-async function saveSettings(){saveSettingsButton.disabled=true;statusMessage.textContent="設定を保存中...";try{const user=auth.currentUser;if(!user||user.email!==ADMIN_EMAIL)throw new Error("not admin");settings=readSettingsFromForm();await setDoc(doc(db,"settings","booking"),{...settings,updatedAt:new Date().toISOString(),updatedBy:user.email});setDirty("settings",false);statusMessage.textContent="設定を保存しました。";await renderAdmin()}catch(e){console.error(e);statusMessage.textContent="設定を保存できませんでした。"}finally{saveSettingsButton.disabled=false}}
+async function saveSettings(){saveSettingsButton.disabled=true;statusMessage.textContent="設定を保存中...";try{const user=auth.currentUser;if(!user||user.email!==ADMIN_EMAIL)throw new Error("not admin");settings=readSettingsFromForm();await setDoc(doc(db,"settings","booking"),{...settings,updatedAt:new Date().toISOString(),updatedBy:user.email});setDirty("settings",false);statusMessage.textContent="設定を保存しました。";await cleanupOldAvailabilityData();await renderAdmin()}catch(e){console.error(e);statusMessage.textContent="設定を保存できませんでした。"}finally{saveSettingsButton.disabled=false}}
 async function saveCalendar(){saveCalendarButton.disabled=true;statusMessage.textContent="カレンダーを保存中...";try{const user=auth.currentUser;if(!user||user.email!==ADMIN_EMAIL)throw new Error("not admin");const batch=writeBatch(db);[...document.querySelectorAll(".day-block")].forEach(block=>{const key=block.dataset.date,isClosed=block.querySelector(".closed-input").checked,checked=[...block.querySelectorAll(".time-check input:checked")].map(i=>i.value);const status=isClosed||checked.length===0?"unavailable":"available";batch.set(doc(db,"availability",key),{status,times:status==="available"?checked:[],updatedAt:new Date().toISOString(),updatedBy:user.email})});await batch.commit();setDirty("calendar",false);statusMessage.textContent="カレンダーを保存しました。"}catch(e){console.error(e);statusMessage.textContent="カレンダーを保存できませんでした。"}finally{saveCalendarButton.disabled=false}}
 [reservationNoticeDaysInput,displayMonthsInput,startTimeInput,endTimeInput,intervalMinutesInput].forEach(input=>input.addEventListener("change",()=>setDirty("settings",true)));
 document.getElementById("popupLoginButton").addEventListener("click",async()=>{loginStatus.textContent="Googleログイン中...";try{await signInWithPopup(auth,provider)}catch(e){loginStatus.textContent="Popupログイン失敗。下のボタンを試してください。";console.error(e)}});document.getElementById("redirectLoginButton").addEventListener("click",async()=>{loginStatus.textContent="Googleログインへ移動します...";try{await signInWithRedirect(auth,provider)}catch(e){loginStatus.textContent="Redirectログイン開始でエラー。";console.error(e)}});document.getElementById("logoutButton").addEventListener("click",()=>signOut(auth));saveSettingsButton.addEventListener("click",saveSettings);saveCalendarButton.addEventListener("click",saveCalendar);getRedirectResult(auth).catch(console.error);
-onAuthStateChanged(auth,async user=>{loadingCard.classList.add("hidden");if(!user){loginCard.classList.remove("hidden");adminContent.classList.add("hidden");return}if(user.email!==ADMIN_EMAIL){loginCard.classList.remove("hidden");adminContent.classList.add("hidden");loginStatus.textContent=`${user.email} は管理者として許可されていません。`;return}loginCard.classList.add("hidden");adminContent.classList.remove("hidden");await loadSettings();await renderAdmin();setDirty("settings",false);setDirty("calendar",false)});
+onAuthStateChanged(auth,async user=>{if(!user){loadingCard.classList.add("hidden");loginCard.classList.remove("hidden");adminContent.classList.add("hidden");return}if(user.email!==ADMIN_EMAIL){loadingCard.classList.add("hidden");loginCard.classList.remove("hidden");adminContent.classList.add("hidden");loginStatus.textContent=`${user.email} は管理者として許可されていません。`;return}loginCard.classList.add("hidden");adminContent.classList.add("hidden");loadingCard.classList.remove("hidden");await loadSettings();const cleanupMessage=await cleanupOldAvailabilityData();loadingText.textContent="管理画面を読み込み中...";await renderAdmin();setDirty("settings",false);setDirty("calendar",false);loadingCard.classList.add("hidden");adminContent.classList.remove("hidden");statusMessage.textContent=cleanupMessage});
 </script></body></html>
