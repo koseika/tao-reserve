@@ -3,14 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tao Reserve 管理画面 Debug</title>
+  <title>Tao Reserve 管理画面</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     .admin-page{width:min(100%,680px)}
-    .login-card,.debug-card{background:rgba(255,255,255,.94);border:1px solid rgba(90,80,68,.08);border-radius:24px;box-shadow:0 10px 32px rgba(70,55,35,.08);padding:18px;margin-bottom:16px}
+    .admin-card,.login-card,.debug-card{background:rgba(255,255,255,.94);border:1px solid rgba(90,80,68,.08);border-radius:24px;box-shadow:0 10px 32px rgba(70,55,35,.08);padding:18px;margin-bottom:16px}
     .month-title{font-size:20px;margin:0 0 14px;font-weight:500}
-    .debug-log{white-space:pre-wrap;background:#fffdf9;border:1px solid #e5dbcf;border-radius:16px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.55;color:#38332d;max-height:320px;overflow:auto}
-    .mini-button{border:0;border-radius:999px;background:#f0ebe3;color:#3c3833;padding:10px 14px;font:inherit;font-size:13px;margin-top:10px}
+    .day-block{border-top:1px solid #eee6dc;padding:16px 0}.day-block:first-of-type{border-top:none}
+    .day-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+    .day-title{font-size:17px;font-weight:500}.date-key{margin-top:3px;color:#8a8175;font-size:12px}
+    .closed-toggle{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#6f6a62;white-space:nowrap}
+    .time-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.time-check{position:relative}.time-check input{position:absolute;opacity:0}
+    .time-check span{display:block;text-align:center;padding:11px 6px;border-radius:999px;background:#f0ebe3;color:#6f6a62;font-size:14px;border:1px solid transparent}
+    .time-check input:checked+span{background:#eef5ef;color:#244c32;border-color:rgba(46,104,65,.18);font-weight:500}
+    .day-block.closed .time-grid{opacity:.35;pointer-events:none}
+    .actions{position:sticky;bottom:0;background:linear-gradient(to top,#faf7f1 70%,rgba(250,247,241,0));padding:22px 0 0;margin-top:12px}
+    .debug-log{white-space:pre-wrap;background:#fffdf9;border:1px solid #e5dbcf;border-radius:16px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.55;color:#38332d;max-height:260px;overflow:auto}
+    @media(max-width:420px){.time-grid{grid-template-columns:repeat(3,1fr)}}
   </style>
 </head>
 <body>
@@ -18,109 +27,119 @@
   <section class="hero">
     <p class="label">Tao Reserve</p>
     <h1>管理画面</h1>
-    <p class="message">Debug版。ログイン失敗の原因を表示します。</p>
+    <p class="message">Googleログイン後、<br>予約できる日と時間を保存します。</p>
   </section>
 
   <section id="loginCard" class="login-card">
     <h2 class="month-title">管理者ログイン</h2>
     <p class="message">Googleアカウントでログインしてください。</p>
-    <button id="loginButton" class="primary-button" type="button">Googleでログイン</button>
+    <button id="popupLoginButton" class="primary-button" type="button">Googleでログイン</button>
+    <button id="redirectLoginButton" class="secondary-button" type="button">ログインできない時はこちら</button>
     <p id="loginStatus" class="status-message"></p>
   </section>
 
   <section class="debug-card">
     <h2 class="month-title">デバッグログ</h2>
     <div id="debugLog" class="debug-log">起動中...</div>
-    <button id="copyDebugButton" class="mini-button" type="button">ログをコピー</button>
+  </section>
+
+  <section id="adminContent" class="hidden">
+    <section class="admin-card">
+      <h2 class="month-title">今月・来月の受付設定</h2>
+      <p class="status-message">休みにしたい日は「休み」にチェック。17時以降だけ受けたい日は15時・16時を外してください。</p>
+      <div id="adminList"></div>
+    </section>
+    <div class="actions">
+      <button class="primary-button" id="saveButton" type="button">Firebaseに保存する</button>
+      <button class="secondary-button" id="logoutButton" type="button">ログアウト</button>
+      <p id="statusMessage" class="status-message"></p>
+    </div>
   </section>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { firebaseConfig, ADMIN_EMAIL } from "./firebase-config.js";
 
-const debugLog = document.getElementById("debugLog");
-const loginButton = document.getElementById("loginButton");
-const loginStatus = document.getElementById("loginStatus");
-let logs = [];
-
-function addLog(label, value = "") {
-  const time = new Date().toLocaleTimeString();
-  let text = `[${time}] ${label}`;
-  if (value) text += `\n${value}`;
-  logs.push(text);
-  debugLog.textContent = logs.join("\n\n");
-}
-
-function errorText(error) {
-  if (!error) return "unknown error";
-  return [
-    `name: ${error.name || ""}`,
-    `code: ${error.code || ""}`,
-    `message: ${error.message || ""}`,
-    `customData: ${JSON.stringify(error.customData || {}, null, 2)}`
-  ].join("\n");
-}
+const debugLog=document.getElementById("debugLog"), loginStatus=document.getElementById("loginStatus");
+let logs=[];
+function addLog(label,value=""){const time=new Date().toLocaleTimeString();logs.push(`[${time}] ${label}${value?`\n${value}`:""}`);debugLog.textContent=logs.join("\n\n")}
+function errorText(e){return [`name: ${e?.name||""}`,`code: ${e?.code||""}`,`message: ${e?.message||""}`,`customData: ${JSON.stringify(e?.customData||{},null,2)}`].join("\n")}
 
 addLog("ページ読み込みOK", location.href);
-addLog("Firebase設定確認", `projectId: ${firebaseConfig.projectId}\nauthDomain: ${firebaseConfig.authDomain}\nadmin: ${ADMIN_EMAIL}`);
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const provider=new GoogleAuthProvider();
+provider.setCustomParameters({ prompt:"select_account" });
+addLog("Firebase初期化OK", `projectId: ${firebaseConfig.projectId}\nauthDomain: ${firebaseConfig.authDomain}\nadmin: ${ADMIN_EMAIL}`);
 
-let app, auth, provider;
+try{await setPersistence(auth,browserLocalPersistence);addLog("Auth永続化OK","browserLocalPersistence")}catch(e){addLog("Auth永続化エラー",errorText(e))}
 
-try {
-  app = initializeApp(firebaseConfig);
-  addLog("Firebase初期化OK");
-  auth = getAuth(app);
-  addLog("Auth取得OK");
-  getFirestore(app);
-  addLog("Firestore取得OK");
-  provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  addLog("GoogleAuthProvider作成OK");
-} catch (error) {
-  addLog("初期化エラー", errorText(error));
+const DEFAULT_TIMES=["15:00","16:00","17:00","18:00","19:00"];
+const loginCard=document.getElementById("loginCard"), adminContent=document.getElementById("adminContent"), adminList=document.getElementById("adminList"), saveButton=document.getElementById("saveButton"), statusMessage=document.getElementById("statusMessage");
+
+function pad(n){return String(n).padStart(2,"0")}
+function formatKey(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function formatLabel(d){return `${d.getMonth()+1}月${d.getDate()}日（${["日","月","火","水","木","金","土"][d.getDay()]}）`}
+function getDatesForTwoMonths(){const t=new Date(),s=new Date(t.getFullYear(),t.getMonth(),1),e=new Date(t.getFullYear(),t.getMonth()+2,0),a=[],c=new Date(s);while(c<=e){a.push(new Date(c));c.setDate(c.getDate()+1)}return a}
+async function getDayData(key){try{const snap=await getDoc(doc(db,"availability",key));if(snap.exists())return snap.data()}catch(e){addLog("Firestore読み込みエラー",errorText(e))}return{status:"available",times:DEFAULT_TIMES}}
+
+async function renderAdmin(){
+  statusMessage.textContent="読み込み中...";adminList.innerHTML="";
+  for(const date of getDatesForTwoMonths()){
+    const key=formatKey(date),data=await getDayData(key),isClosed=data.status==="unavailable",selected=data.times||[];
+    const block=document.createElement("div");block.className=`day-block ${isClosed?"closed":""}`;block.dataset.date=key;
+    block.innerHTML=`<div class="day-header"><div><div class="day-title">${formatLabel(date)}</div><div class="date-key">${key}</div></div><label class="closed-toggle"><input type="checkbox" class="closed-input" ${isClosed?"checked":""}>休み</label></div><div class="time-grid">${DEFAULT_TIMES.map(t=>`<label class="time-check"><input type="checkbox" value="${t}" ${selected.includes(t)?"checked":""}><span>${t}</span></label>`).join("")}</div>`;
+    const closedInput=block.querySelector(".closed-input");closedInput.addEventListener("change",()=>block.classList.toggle("closed",closedInput.checked));
+    adminList.appendChild(block);
+  }
+  statusMessage.textContent="";addLog("管理画面表示OK");
 }
 
-loginButton.addEventListener("click", async () => {
-  loginStatus.textContent = "Googleログインへ移動します...";
-  addLog("ログインボタン押下");
-  try {
-    addLog("signInWithRedirect開始");
-    await signInWithRedirect(auth, provider);
-    addLog("signInWithRedirect呼び出し後");
-  } catch (error) {
-    loginStatus.textContent = "ログイン開始でエラーが出ました。";
-    addLog("ログイン開始エラー", errorText(error));
-  }
+async function saveAvailability(){
+  saveButton.disabled=true;statusMessage.textContent="保存中...";
+  try{
+    const user=auth.currentUser;addLog("保存開始",user?`email: ${user.email}`:"userなし");
+    if(!user||user.email!==ADMIN_EMAIL)throw new Error("管理者としてログインしていません。");
+    const batch=writeBatch(db);
+    [...document.querySelectorAll(".day-block")].forEach(block=>{
+      const key=block.dataset.date,isClosed=block.querySelector(".closed-input").checked;
+      const checked=[...block.querySelectorAll(".time-check input:checked")].map(i=>i.value);
+      const status=isClosed||checked.length===0?"unavailable":"available";
+      batch.set(doc(db,"availability",key),{status,times:status==="available"?checked:[],updatedAt:new Date().toISOString(),updatedBy:user.email});
+    });
+    await batch.commit();statusMessage.textContent="保存しました。予約ページを確認してください。";addLog("保存OK");
+  }catch(e){statusMessage.textContent="保存できませんでした。";addLog("保存エラー",errorText(e))}
+  finally{saveButton.disabled=false}
+}
+
+document.getElementById("popupLoginButton").addEventListener("click",async()=>{
+  loginStatus.textContent="Googleログイン中...";
+  addLog("Popupログイン開始");
+  try{const result=await signInWithPopup(auth,provider);addLog("PopupログインOK",`email: ${result.user.email}`)}
+  catch(e){loginStatus.textContent="Popupログイン失敗。下のボタンを試してください。";addLog("Popupログインエラー",errorText(e))}
 });
 
-getRedirectResult(auth).then((result) => {
-  if (result && result.user) {
-    addLog("Redirect結果取得OK", `email: ${result.user.email}`);
-  } else {
-    addLog("Redirect結果なし", "通常表示または未ログイン状態");
-  }
-}).catch((error) => {
-  loginStatus.textContent = "ログイン処理でエラーが出ました。";
-  addLog("Redirect結果取得エラー", errorText(error));
+document.getElementById("redirectLoginButton").addEventListener("click",async()=>{
+  loginStatus.textContent="Googleログインへ移動します...";
+  addLog("Redirectログイン開始");
+  try{await signInWithRedirect(auth,provider)}
+  catch(e){loginStatus.textContent="Redirectログイン開始でエラー。";addLog("Redirectログイン開始エラー",errorText(e))}
 });
 
-onAuthStateChanged(auth, (user) => {
-  addLog("Auth状態変更", user ? `email: ${user.email}` : "未ログイン");
-  if (user && user.email === ADMIN_EMAIL) {
-    loginStatus.textContent = "管理者ログイン成功です。";
-  }
-});
+document.getElementById("logoutButton").addEventListener("click",()=>signOut(auth));
+saveButton.addEventListener("click",saveAvailability);
 
-document.getElementById("copyDebugButton").addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(debugLog.textContent);
-    addLog("ログコピーOK");
-  } catch (error) {
-    addLog("ログコピー失敗", errorText(error));
-  }
+getRedirectResult(auth).then(result=>{addLog("Redirect結果",result?.user?`email: ${result.user.email}`:"結果なし")}).catch(e=>addLog("Redirect結果エラー",errorText(e)));
+
+onAuthStateChanged(auth,async user=>{
+  addLog("Auth状態変更",user?`email: ${user.email}`:"未ログイン");
+  if(!user){loginCard.classList.remove("hidden");adminContent.classList.add("hidden");return}
+  if(user.email!==ADMIN_EMAIL){loginCard.classList.remove("hidden");adminContent.classList.add("hidden");loginStatus.textContent=`${user.email} は管理者として許可されていません。`;return}
+  loginCard.classList.add("hidden");adminContent.classList.remove("hidden");await renderAdmin();
 });
 </script>
 </body>
