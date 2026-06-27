@@ -1,5 +1,5 @@
-// Tao Reserve Firebase Edition Ver.3.5
-// 予約ページ：設定と空き状況をFirestoreから読み込みます。
+// Tao Reserve Firebase Edition Ver.3.6.1
+// 予約ページ：Firestore読み込み中の月送りでカレンダーが崩れないように修正
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import {
@@ -22,6 +22,8 @@ const DEFAULT_SETTINGS = {
 
 let settings = { ...DEFAULT_SETTINGS };
 let currentMonthOffset = 0;
+let renderVersion = 0;
+
 const today = stripTime(new Date());
 const reservationCache = {};
 
@@ -124,7 +126,13 @@ async function getDayData(key) {
   return defaultData;
 }
 
+function setCalendarLoading(isLoading) {
+  prevMonthButton.disabled = isLoading || currentMonthOffset === 0;
+  nextMonthButton.disabled = isLoading || currentMonthOffset >= Number(settings.displayMonths || 2) - 1;
+}
+
 async function renderCalendar() {
+  const thisRender = ++renderVersion;
   const date = getDisplayDate();
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -133,46 +141,71 @@ async function renderCalendar() {
   calendarEl.innerHTML = "";
   timePanel.classList.add("hidden");
   loadingMessage.textContent = "空き状況を読み込んでいます。";
-
-  prevMonthButton.disabled = currentMonthOffset === 0;
-  nextMonthButton.disabled = currentMonthOffset >= Number(settings.displayMonths || 2) - 1;
+  setCalendarLoading(true);
 
   const firstDay = new Date(year, month, 1);
   const lastDate = new Date(year, month + 1, 0).getDate();
   const startBlankCount = (firstDay.getDay() + 6) % 7;
 
+  const items = [];
+
   for (let i = 0; i < startBlankCount; i++) {
-    const empty = document.createElement("div");
-    empty.className = "day empty";
-    calendarEl.appendChild(empty);
+    items.push({ type: "empty" });
   }
 
   for (let day = 1; day <= lastDate; day++) {
     const cellDate = new Date(year, month, day);
     const key = formatDateKey(year, month, day);
     const data = await getDayData(key);
+
+    // 月送りなどで新しい描画が始まっていたら、この古い描画は捨てる
+    if (thisRender !== renderVersion) return;
+
     const blockedByNotice = isBeforeBookableDate(cellDate);
     const isAvailable = !blockedByNotice && data.status === "available";
 
+    items.push({
+      type: "day",
+      day,
+      month,
+      isAvailable,
+      times: data.times || generateDefaultTimes()
+    });
+  }
+
+  if (thisRender !== renderVersion) return;
+
+  const fragment = document.createDocumentFragment();
+
+  items.forEach((item) => {
+    if (item.type === "empty") {
+      const empty = document.createElement("div");
+      empty.className = "day empty";
+      fragment.appendChild(empty);
+      return;
+    }
+
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `day ${isAvailable ? "available-day" : "unavailable-day"}`;
-
+    button.className = `day ${item.isAvailable ? "available-day" : "unavailable-day"}`;
     button.innerHTML = `
-      <span class="day-number">${day}</span>
-      <span class="day-status">${isAvailable ? "○" : "×"}</span>
+      <span class="day-number">${item.day}</span>
+      <span class="day-status">${item.isAvailable ? "○" : "×"}</span>
     `;
 
-    if (isAvailable) {
-      button.addEventListener("click", () => showTimes(month, day, data.times || generateDefaultTimes()));
+    if (item.isAvailable) {
+      button.addEventListener("click", () => showTimes(item.month, item.day, item.times));
     } else {
       button.disabled = true;
     }
 
-    calendarEl.appendChild(button);
-  }
+    fragment.appendChild(button);
+  });
 
+  calendarEl.innerHTML = "";
+  calendarEl.appendChild(fragment);
   loadingMessage.textContent = "";
+  setCalendarLoading(false);
 }
 
 function showTimes(month, day, times) {
