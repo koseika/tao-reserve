@@ -1,9 +1,7 @@
 # Tao Reserve Firebase Edition
 
-Firebase Firestoreを使う予約ページです。
+## Ver.3.0
 
-## Ver.2.0
-
-- 予約ページがFirestoreから空き状況を読み込みます
-- 管理画面からFirestoreへ空き状況を保存します
-- 公式LINEへの予約文自動入力を維持しています
+- 管理画面にGoogleログインを追加
+- 管理者メールのみ保存できるように変更
+- Firestoreルール安全化用の `firestore.rules` を追加

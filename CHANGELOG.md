@@ -1,7 +1,7 @@
 # Tao Reserve CHANGELOG
 
-## Firebase Edition Ver.2.0
+## Firebase Edition Ver.3.0
 
-- Firestore連携を追加
-- 予約ページがFirestoreから空き状況を読むように変更
-- 管理画面からFirestoreへ保存できるように変更
+- Googleログインを追加
+- 管理者メールチェックを追加
+- Firestoreルール安全化
