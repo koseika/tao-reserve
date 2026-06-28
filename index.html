@@ -12,7 +12,15 @@
       --text: #2f2924;
       --circle: #3a3029;
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      min-height: 100%;
+    }
+
     body {
       margin: 0;
       background: var(--bg);
@@ -20,6 +28,7 @@
       font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
       letter-spacing: 0.08em;
     }
+
     main {
       min-height: 100svh;
       display: grid;
@@ -28,6 +37,7 @@
       margin: 0 auto;
       padding: clamp(28px, 6vh, 64px) 0 clamp(28px, 6vh, 56px);
     }
+
     h1 {
       margin: 0;
       text-align: center;
@@ -36,6 +46,7 @@
       letter-spacing: 0.18em;
       line-height: 1.2;
     }
+
     .entrances {
       align-self: center;
       display: grid;
@@ -43,6 +54,7 @@
       gap: clamp(28px, 7vw, 72px) clamp(32px, 9vw, 88px);
       padding-top: clamp(28px, 7vh, 64px);
     }
+
     a.card {
       display: grid;
       place-items: center;
@@ -52,81 +64,107 @@
       text-align: center;
       -webkit-tap-highlight-color: transparent;
     }
+
     .enso {
       width: clamp(86px, 19vw, 132px);
       aspect-ratio: 1;
       display: block;
       transition: transform 500ms ease, opacity 500ms ease;
     }
+
     .card:hover .enso {
       transform: scale(1.045);
       opacity: 0.86;
     }
+
     .label {
       font-size: clamp(0.9rem, 2.4vw, 1.05rem);
       letter-spacing: 0.12em;
       line-height: 1.45;
     }
+
     svg path {
       fill: none;
       stroke: var(--circle);
       stroke-linecap: round;
       stroke-linejoin: round;
+      filter: url(#roughen);
     }
+
     .s1 { stroke-width: 3.2; opacity: .86; }
     .s2 { stroke-width: 2.4; opacity: .48; }
     .s3 { stroke-width: 2.7; opacity: .72; }
     .s4 { stroke-width: 2.2; opacity: .50; }
+
     @media (max-width: 520px) {
       main {
         width: min(100% - 28px, 440px);
         padding-top: 32px;
       }
+
       .entrances {
         gap: 30px 22px;
         padding-top: 42px;
       }
-      .label { font-size: 0.88rem; }
+
+      .label {
+        font-size: 0.88rem;
+      }
     }
+
     @media (max-height: 660px) {
       main {
         padding-top: 22px;
         padding-bottom: 22px;
       }
+
       .entrances {
         gap: 22px 36px;
         padding-top: 24px;
       }
-      .enso { width: clamp(72px, 15vw, 100px); }
+
+      .enso {
+        width: clamp(72px, 15vw, 100px);
+      }
     }
   </style>
 </head>
 <body>
   <main>
     <h1>Tao Reserve</h1>
+
     <nav class="entrances" aria-label="Tao Reserve menu">
-      <a class="card" href="./taotantra_worldview_noindex.html">
+      <a class="card" href="worldview.html">
         <svg class="enso" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <filter id="roughen">
+              <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" result="noise"/>
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2"/>
+            </filter>
+          </defs>
           <path class="s1" d="M61 14 C88 16 108 37 106 63 C104 89 84 106 58 106 C32 106 14 86 15 60 C16 35 35 16 61 14 Z"/>
           <path class="s2" d="M64 18 C88 21 102 39 101 62 C100 84 82 101 59 101 C36 101 20 84 20 60 C20 38 39 20 64 18 Z"/>
         </svg>
         <span class="label">世界観</span>
       </a>
-      <a class="card" href="./session_about.html">
+
+      <a class="card" href="session.html">
         <svg class="enso" viewBox="0 0 120 120" aria-hidden="true">
           <path class="s3" d="M57 13 C83 12 105 32 108 58 C111 84 92 103 64 107 C36 111 15 91 14 63 C13 37 31 16 57 13 Z"/>
           <path class="s4" d="M59 19 C83 18 100 36 101 60 C102 84 84 99 60 100 C37 101 21 84 20 62 C19 38 36 20 59 19 Z"/>
         </svg>
         <span class="label">セッション</span>
       </a>
-      <a class="card" href="./price.html">
+
+      <a class="card" href="price.html">
         <svg class="enso" viewBox="0 0 120 120" aria-hidden="true">
           <path class="s1" d="M62 15 C87 17 104 36 105 60 C106 86 86 106 60 105 C35 104 16 86 15 61 C14 36 36 13 62 15 Z"/>
           <path class="s2" d="M61 21 C83 22 99 39 99 61 C99 83 82 99 60 99 C38 99 22 82 21 61 C20 39 39 20 61 21 Z"/>
         </svg>
         <span class="label">料金</span>
       </a>
-      <a class="card" href="./calendar.html">
+
+      <a class="card" href="calendar.html">
         <svg class="enso" viewBox="0 0 120 120" aria-hidden="true">
           <path class="s3" d="M58 14 C85 13 105 35 106 61 C107 88 88 106 61 106 C34 106 15 88 14 61 C13 34 32 15 58 14 Z"/>
           <path class="s4" d="M61 20 C84 21 100 39 100 61 C100 84 83 101 60 100 C37 99 21 83 20 60 C19 38 38 19 61 20 Z"/>
